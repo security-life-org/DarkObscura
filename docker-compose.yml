@@ -1,0 +1,30 @@
+services:
+  dobscura:
+    build:
+      context: .
+      args:
+        VERSION: "0.1.0"
+    image: darkobscura:0.1.0
+    # Publish only to localhost by default; put a reverse proxy / VPN in front
+    # before exposing beyond the host.
+    ports:
+      - "127.0.0.1:8422:8422"
+    command:
+      - "--gui"
+      - "--gui-addr=0.0.0.0:8422"
+      - "--no-open"
+      # Restrict the engagement scope (REQUIRED for safe deployment):
+      - "--scope=${DOBSCURA_SCOPE:-}"
+      # Provide a stable token via secret/env so the UI URL is predictable:
+      - "--token=${DOBSCURA_TOKEN:?set DOBSCURA_TOKEN}"
+    read_only: true
+    security_opt:
+      - "no-new-privileges:true"
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/dobscura", "--version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped

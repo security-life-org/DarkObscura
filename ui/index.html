@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DarkObscura</title>
+  <style>
+    :root {
+      --bg: #0a0b10; --panel: #12141c; --line: #232733; --fg: #d7dbe6;
+      --muted: #8790a3; --accent: #7c5cff; --danger: #ff4d6d; --ok: #35d0a5;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
+      font: 14px/1.5 ui-monospace, "SF Mono", Menlo, monospace; }
+    #app { display: grid; grid-template-rows: auto 1fr; height: 100%; }
+    header { display: flex; align-items: center; gap: 16px; padding: 10px 16px;
+      border-bottom: 1px solid var(--line); background: var(--panel); }
+    header .brand { font-weight: 700; letter-spacing: 0.08em; }
+    header .brand span { color: var(--accent); }
+    .modes { display: flex; gap: 4px; margin-left: auto; }
+    .modes button { background: transparent; color: var(--muted); border: 1px solid transparent;
+      padding: 6px 12px; border-radius: 8px; cursor: pointer; font: inherit; }
+    .modes button.active { color: var(--fg); border-color: var(--line); background: #171a24; }
+    .warn { color: var(--danger); font-size: 12px; }
+    main { position: relative; overflow: hidden; }
+    .view { position: absolute; inset: 0; display: none; }
+    .view.active { display: block; }
+    /* Zen */
+    #zen .bar { position: absolute; top: 16px; left: 16px; right: 16px; z-index: 2;
+      display: flex; gap: 8px; }
+    #zen input { flex: 1; background: var(--panel); border: 1px solid var(--line);
+      color: var(--fg); padding: 10px 12px; border-radius: 8px; font: inherit; }
+    #zen button { background: var(--accent); color: #fff; border: 0; padding: 10px 16px;
+      border-radius: 8px; cursor: pointer; font: inherit; }
+    #graph { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    .legend { position: absolute; bottom: 16px; left: 16px; z-index: 2; font-size: 12px;
+      color: var(--muted); }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin: 0 4px; }
+    /* Tactical */
+    #tactical { display: none; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); }
+    #tactical.active { display: grid; }
+    #tactical .pane { background: var(--panel); padding: 12px; overflow: auto; }
+    #tactical h3 { margin: 0 0 8px; font-size: 12px; color: var(--muted); text-transform: uppercase; }
+    pre { margin: 0; white-space: pre-wrap; word-break: break-word; }
+    .hl { background: rgba(255,77,109,0.18); border-bottom: 1px dashed var(--danger); }
+    /* God */
+    #god { padding: 16px; overflow: auto; }
+    #god .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    #god .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+      padding: 12px; }
+    /* Command palette */
+    #palette { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none;
+      align-items: flex-start; justify-content: center; padding-top: 12vh; z-index: 10; }
+    #palette.open { display: flex; }
+    #palette .box { width: min(560px, 90vw); background: var(--panel); border: 1px solid var(--line);
+      border-radius: 12px; overflow: hidden; }
+    #palette input { width: 100%; padding: 14px 16px; background: transparent; border: 0;
+      color: var(--fg); font: inherit; outline: none; }
+    #palette ul { list-style: none; margin: 0; padding: 4px; border-top: 1px solid var(--line); }
+    #palette li { padding: 8px 12px; border-radius: 8px; cursor: pointer; }
+    #palette li.sel { background: #171a24; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <div class="brand">DARK<span>OBSCURA</span></div>
+      <div class="warn">authorized testing only</div>
+      <div class="modes">
+        <button data-mode="zen" class="active">Zen</button>
+        <button data-mode="tactical">Tactical</button>
+        <button data-mode="god">God</button>
+      </div>
+    </header>
+    <main>
+      <section id="zen" class="view active">
+        <div class="bar">
+          <input id="target" placeholder="https://target.example  —  press Enter to map" />
+          <button id="scan">Map & Analyze</button>
+        </div>
+        <canvas id="graph"></canvas>
+        <div class="legend">
+          <span class="dot" style="background:#35d0a5"></span>endpoint
+          <span class="dot" style="background:#ffcc55"></span>risky param
+          <span class="dot" style="background:#ff4d6d"></span>exploitable — click to exploit
+        </div>
+      </section>
+
+      <section id="tactical" class="view">
+        <div class="pane">
+          <h3>Request</h3>
+          <pre id="req"></pre>
+        </div>
+        <div class="pane">
+          <h3>Response — risky params highlighted</h3>
+          <pre id="resp"></pre>
+        </div>
+      </section>
+
+      <section id="god" class="view">
+        <div class="grid">
+          <div class="card"><h3>Raw AST Editor</h3><pre id="ast">{ }</pre></div>
+          <div class="card"><h3>eBPF Trace Viewer</h3><pre id="ebpf">waiting for kernel events…</pre></div>
+          <div class="card"><h3>WASM Scripting Console</h3><pre id="wasm">dobscura&gt; load jwt-inspect.wasm</pre></div>
+          <div class="card"><h3>Hex / Binary Editor</h3><pre id="hex">00000000  ..</pre></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="palette">
+    <div class="box">
+      <input placeholder="Type a command…  (Esc to close)" />
+      <ul></ul>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
