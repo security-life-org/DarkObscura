@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DarkObscura</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- ░░ TOP BAR ░░ -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">◈</span> DARK<span class="accent">OBSCURA</span>
+        <span class="version">v0.1</span>
+        <span id="busy-spin" class="busy-spin" title="working…"></span>
+      </div>
+
+      <div class="target-wrap">
+        <span class="proto-dot" id="conn-dot" title="backend connected"></span>
+        <input id="target" spellcheck="false"
+               placeholder="https://target.example   —   Deep Scan crawls it · Analyze tests one URL" />
+        <label class="authz"><input type="checkbox" id="authz" /> authorized</label>
+        <button id="deepscan" class="btn-secondary" title="Crawl the whole origin and scan every discovered endpoint">
+          <span class="btn-label">🕸 Deep Scan</span>
+        </button>
+        <button id="scan" class="btn-primary">
+          <span class="btn-label">Analyze</span>
+        </button>
+      </div>
+
+      <nav class="modes">
+        <button data-mode="zen" class="active">◎ Zen</button>
+        <button data-mode="params">▤ Params</button>
+        <button data-mode="tactical">⇄ Tactical</button>
+        <button data-mode="god">⌘ God</button>
+        <button data-mode="loot">💰 Loot</button>
+
+        <div class="dropdown" id="recon-dd">
+          <button class="dd-toggle" id="recon-toggle">🧰 Recon ▾</button>
+          <div class="dd-menu dd-right" id="recon-menu">
+            <div class="dd-group">RECON &amp; DETECTION</div>
+            <button data-act="fingerprint">🔎 Fingerprint tech + CVEs</button>
+            <button data-act="templates">📦 Nuclei templates (304)</button>
+            <button data-act="secrets">🔑 Leaked secret scan</button>
+            <div class="dd-group">CLIENT-SIDE</div>
+            <button data-act="clientside">🌐 CORS / cache / CSP</button>
+            <button data-act="dom">🧩 DOM-XSS analysis</button>
+            <div class="dd-group">INFRA</div>
+            <button data-act="waf">🛡 WAF / block check</button>
+            <button data-act="takeover">🪝 Subdomain takeover</button>
+            <button data-act="grpc">📡 gRPC reflection fuzz</button>
+          </div>
+        </div>
+
+        <div class="dropdown" id="help-dd">
+          <button class="dd-toggle" id="help-toggle">☰</button>
+          <div class="dd-menu dd-right" id="help-menu">
+            <button data-act="palette">⌘ Command palette (Ctrl+K)</button>
+            <button data-act="crawl">🕷 Crawl attack surface</button>
+            <button data-act="report">📄 Export HTML report</button>
+            <button data-act="findings">⬇ Export findings JSON</button>
+            <button data-act="about">ℹ About DarkObscura</button>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <!-- ░░ MAIN ░░ -->
+    <main>
+      <!-- ── ZEN / DASHBOARD ── -->
+      <section id="zen" class="view active">
+        <div class="zen-grid">
+          <!-- attack graph -->
+          <div class="panel graph-panel">
+            <div class="panel-head">
+              <span>ATTACK SURFACE GRAPH</span>
+              <span style="margin-left:auto;display:flex;gap:10px;align-items:center">
+                <button id="hailmary" class="btn-hail" title="Auto-exploit every confirmed finding and collect the loot">🎯 Hail Mary</button>
+                <span class="muted" id="graph-meta">idle</span>
+              </span>
+            </div>
+            <div class="graph-hint muted">right-click a node for attack options</div>
+            <div id="graph-wrap">
+              <canvas id="graph"></canvas>
+              <div id="labels"></div>
+              <div id="tooltip" class="tooltip"></div>
+              <div class="scan-sweep" id="sweep"></div>
+            </div>
+            <div class="legend">
+              <span><i class="dot ok"></i>endpoint</span>
+              <span><i class="dot warn"></i>parameter</span>
+              <span><i class="dot risk"></i>high-risk</span>
+              <span><i class="dot vuln"></i>confirmed vuln</span>
+            </div>
+          </div>
+
+          <!-- intelligence sidebar -->
+          <aside class="intel">
+            <div class="target-head">
+              <div class="thost" id="intel-host">no target</div>
+              <div class="tmeta muted" id="intel-meta">run a scan to populate intelligence</div>
+            </div>
+
+            <div class="stat-row" id="stats">
+              <div class="stat"><div class="num" id="s-params">0</div><div class="lbl">params</div></div>
+              <div class="stat"><div class="num" id="s-probed">0</div><div class="lbl">probed</div></div>
+              <div class="stat vuln"><div class="num" id="s-conf">0</div><div class="lbl">confirmed</div></div>
+              <div class="stat crit"><div class="num" id="s-crit">0</div><div class="lbl">critical</div></div>
+            </div>
+
+            <div class="sevbar-wrap">
+              <div class="sevbar" id="sevbar"></div>
+              <div class="sevbar-legend" id="sevlegend"></div>
+            </div>
+
+            <div class="panel-head sub"><span>CONFIRMED FINDINGS</span>
+              <span class="muted" id="find-count">0</span></div>
+            <div id="findings" class="findings">
+              <div class="empty" id="find-empty">No findings yet. Every result is verified through the
+                4-stage pipeline — zero false positives by design.</div>
+            </div>
+
+            <div class="panel-head sub"><span>PASSIVE AUDIT</span>
+              <span class="muted" id="passive-count">0</span></div>
+            <div id="passive" class="passive">
+              <div class="empty">Header, cookie, CORS &amp; secret analysis — zero extra requests.</div>
+            </div>
+          </aside>
+        </div>
+
+        <!-- live activity console -->
+        <div class="panel console-panel">
+          <div class="panel-head"><span>◉ LIVE ACTIVITY</span>
+            <span class="muted">verification-gated engine</span></div>
+          <div id="console" class="console"></div>
+        </div>
+      </section>
+
+      <!-- ── PARAMETERS ── -->
+      <section id="params" class="view">
+        <div class="panel full">
+          <div class="panel-head"><span>DISCOVERED PARAMETERS &amp; RISK PROFILE</span>
+            <span class="muted" id="param-meta">—</span></div>
+          <div class="table-wrap">
+            <table id="param-table">
+              <thead><tr>
+                <th>parameter</th><th>location</th><th>endpoint</th><th>risk</th>
+                <th>findings</th><th>notes</th>
+              </tr></thead>
+              <tbody id="param-body">
+                <tr><td colspan="5" class="empty">Run a scan to enumerate parameters.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── TACTICAL / REPEATER ── -->
+      <section id="tactical" class="view">
+        <div class="tactical-grid">
+          <div class="panel">
+            <div class="panel-head"><span>REQUEST · editable — resend anything</span>
+              <button id="repeat-send" class="btn-primary" style="padding:5px 14px">Send ▸</button></div>
+            <textarea id="req-edit" class="code editable" spellcheck="false"
+              placeholder="GET /path?id=1 HTTP/1.1&#10;Host: target&#10;&#10;(edit and press Send)"></textarea>
+          </div>
+          <div class="panel"><div class="panel-head"><span>RESPONSE</span>
+            <span class="muted" id="repeat-meta">send a request to see the response</span></div>
+            <pre id="resp" class="code"></pre></div>
+        </div>
+      </section>
+
+      <!-- ── LOOT ── -->
+      <section id="loot" class="view">
+        <div class="panel full">
+          <div class="panel-head"><span>💰 LOOT — evidence collected from exploitation</span>
+            <span style="margin-left:auto;display:flex;gap:10px;align-items:center">
+              <span class="muted" id="loot-meta">nothing looted yet</span>
+              <button id="loot-export" class="btn-secondary" style="padding:5px 12px">⬇ Export loot</button>
+            </span></div>
+          <div id="loot-list" class="loot-list">
+            <div class="empty">Run <b>🎯 Hail Mary</b> (or Prove exploit on a finding) to auto-exploit
+              confirmed findings and collect loot: exfiltrated DB versions, dumped files, working XSS PoCs.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── GOD / KERNEL ── -->
+      <section id="god" class="view">
+        <div class="god-grid">
+          <div class="panel">
+            <div class="panel-head"><span>MANUAL PAYLOAD CONSOLE</span>
+              <span class="muted">fire one payload · see verdict</span></div>
+            <div class="pc">
+              <input id="pc-url" class="pc-in" placeholder="target URL (e.g. http://site/search?q=1)" />
+              <div class="pc-row">
+                <input id="pc-param" class="pc-in" placeholder="param / header / cookie name" />
+                <select id="pc-loc" class="pc-in">
+                  <option value="query">query</option>
+                  <option value="header">header</option>
+                  <option value="cookie">cookie</option>
+                </select>
+              </div>
+              <input id="pc-payload" class="pc-in" placeholder="payload   e.g. dobx{{63*63}}  or  &lt;svg/onload=1&gt;" />
+              <button id="pc-send" class="btn-primary" style="width:100%;margin-top:2px">⚡ Fire payload ▸</button>
+              <div id="pc-verdict" class="pc-verdict"></div>
+            </div>
+          </div>
+          <div class="panel"><div class="panel-head"><span>RESPONSE INSPECTOR</span>
+            <span class="muted" id="god-meta">—</span></div>
+            <pre id="god-resp" class="code"></pre></div>
+          <div class="panel"><div class="panel-head"><span>RESPONSE AST</span>
+            <span class="muted">structure</span></div>
+            <pre id="god-ast" class="code"></pre></div>
+          <div class="panel"><div class="panel-head"><span>HEX VIEW</span>
+            <span class="muted">response bytes</span></div>
+            <pre id="god-hex" class="code"></pre></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- graph node context menu (Armitage-style) -->
+  <div id="ctxmenu"></div>
+
+  <!-- attack / exploitation console -->
+  <div id="attack"><div class="abox">
+    <div class="ahead"><span id="attack-title">⚡ Exploitation Console</span>
+      <button id="attack-close">✕</button></div>
+    <div id="attack-body"></div>
+  </div></div>
+
+  <!-- command palette -->
+  <div id="palette"><div class="box">
+    <input placeholder="Type a command…   (Esc to close)" />
+    <ul></ul>
+  </div></div>
+
+  <!-- about modal -->
+  <div id="about"><div class="about-box">
+    <button id="about-close">✕</button>
+    <div class="about-logo">◈</div>
+    <h2>DARK<span class="accent">OBSCURA</span></h2>
+    <p class="about-tag">Precision offensive security platform — zero false positives by design.</p>
+    <div class="about-credit">created by <b>sudo3rs</b> aka <b>Masriyan</b></div>
+    <div class="about-feats">
+      <span>✓ Deterministic verification</span>
+      <span>✓ 304 Nuclei templates</span>
+      <span>✓ CVE correlation</span>
+      <span>✓ IDOR / GraphQL / gRPC</span>
+      <span>✓ Blind XSS OOB</span>
+      <span>✓ Business-logic testing</span>
+    </div>
+    <p class="about-foot">Authorized use only.</p>
+  </div></div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
