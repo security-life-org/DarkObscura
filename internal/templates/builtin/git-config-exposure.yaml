@@ -1,0 +1,16 @@
+id: git-config-exposure
+info:
+  name: Exposed .git/config
+  severity: high
+  tags: exposure,git
+requests:
+  - method: GET
+    path: /.git/config
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        part: body
+        words: ["[core]", "repositoryformatversion"]
+        condition: or

@@ -1,0 +1,16 @@
+id: dotenv-exposure
+info:
+  name: Exposed .env file
+  severity: critical
+  tags: exposure,secrets
+requests:
+  - method: GET
+    path: /.env
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        part: body
+        regex:
+          - "(?m)^\\s*(APP_KEY|DB_PASSWORD|SECRET_KEY|AWS_SECRET_ACCESS_KEY)\\s*="

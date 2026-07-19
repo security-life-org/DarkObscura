@@ -1,0 +1,16 @@
+id: phpinfo-exposure
+info:
+  name: Exposed phpinfo()
+  severity: medium
+  tags: exposure,php,info-leak
+requests:
+  - method: GET
+    path: /phpinfo.php
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        part: body
+        words: ["PHP Version", "phpinfo()"]
+        condition: or

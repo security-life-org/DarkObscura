@@ -1,0 +1,16 @@
+id: spring-actuator-exposure
+info:
+  name: Exposed Spring Boot Actuator
+  severity: medium
+  tags: exposure,springboot,actuator
+requests:
+  - method: GET
+    path: /actuator/env
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: word
+        part: body
+        words: ["propertySources", "systemEnvironment"]
+        condition: or
