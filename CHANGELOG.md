@@ -7,7 +7,7 @@ All notable changes to DarkObscura are documented here. This project adheres to
 
 First public release.
 
-### Verification engine (zero false positives)
+### Verification engine (reduce false positives)
 - Four-stage pipeline: baseline → structural differential → time-series (z-score) →
   out-of-band canary (DNS/HTTP).
 - Detection classes: time-based & error-based SQLi, reflected XSS, SSTI, LFI/path
